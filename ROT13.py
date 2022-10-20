@@ -1,11 +1,13 @@
 import fileinput
 
-# maketrans mapuje chary z pierwszego stringa na chary z drugiego a->n itp.
+# ADVANTAGE: encrypting twice results in decryption
+
+# macetrans maps characters from the first string to characters from the second: a->n, etc.
 table = str.maketrans("abcdefghijklmnopqrstuvwxyz", "nopqrstuvwxyzabcdefghijklm")
 
 for line in fileinput.input():
     line = line.rstrip() 
-    # rstrip usuwa spacje defaultowo
+    # rstrip deletes spaces (default setting)
 
     print(str.translate(line, table)) 
-    # translate zamienia znaki korzystajac ze slownika (tu: table)
+    # translate converts characters using the dictionary (here: table)
