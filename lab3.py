@@ -1,79 +1,54 @@
-from sre_parse import SPECIAL_CHARS
-from Crypto.Cipher import DES,AES
-from Crypto.Random import get_random_bytes
-import math
-from sys import argv
+# Comparing entropy - ECB and CBC mode
 
-from click import password_option
+from venv import create
+from Crypto.Cipher import AES
+from Crypto.Random import get_random_bytes
+from sys import argv
 from entropy import count_entropy_of_text
 from Crypto.Util.Padding import pad
-import string
 from Crypto.Protocol.KDF import PBKDF2
+from lab3functions import max_entropy_in_text, count_length_of_alphabet
 
-def max_info_in_sign(n):
-    return math.log2(n)
-
-def max_entropy_in_text(k, n):
-    return k*max_info_in_sign(n)
-
-LOWERCASE_LETTERS = list(string.ascii_lowercase)
-UPPERCASE_LETTERS = list(string.ascii_uppercase)
-SPECIAL_CHARS = list(string.punctuation)
-
-def count_length_of_alphabet(key):
-    alph_lenght = 0
-    check_letters = {"lowercase" : False, "uppercase": False, "special" : False}
-    for sign in key:
-        if sign in LOWERCASE_LETTERS:
-            check_letters["lowercase"] = True
-        if sign in UPPERCASE_LETTERS:
-            check_letters["uppercase"] = True
-        if sign in SPECIAL_CHARS:
-            check_letters["special"] = True
-    
-    if check_letters["lowercase"] == True:
-        alph_lenght += len(LOWERCASE_LETTERS)
-    if check_letters["uppercase"] == True:
-        alph_lenght += len(UPPERCASE_LETTERS)
-    if check_letters["special"] == True:
-        alph_lenght += len(SPECIAL_CHARS)
-
-    return alph_lenght
-
-
-# Comparing entropy - ECB and CBC mode
+# default text to encrypt with entropy ~ 0
 t = ""
 for i in range(9999):
     t += "0"
 
+# default key
 key = "key4567890123456"
 
-if len(argv) == 3:
+if len(argv) > 1:
     file = open(argv[1], "r")  # encrypted text
     t = file.read()
+
+if len(argv) > 2:
     key = argv[2]
 
 BLOCK_SIZE = 16
-key = PBKDF2(str.encode(key), BLOCK_SIZE)
+key_modified = PBKDF2(str.encode(key), BLOCK_SIZE)
 
-aes_ecb = AES.new(key, AES.MODE_ECB)
+aes_ecb = AES.new(key_modified, AES.MODE_ECB)
 encrypted = aes_ecb.encrypt(pad(str.encode(t), BLOCK_SIZE))
 
 print("AES ECB entropy: {}".format(count_entropy_of_text(encrypted)))
 
 iv = get_random_bytes(16)
-aes_cbc = AES.new(key, AES.MODE_CBC, iv)
+aes_cbc = AES.new(key_modified, AES.MODE_CBC, iv)
 encrypted = aes_cbc.encrypt(pad(str.encode(t), BLOCK_SIZE))
 
 print("AES CBC entropy: {}".format(count_entropy_of_text(encrypted)))
 
 # print(count_entropy_of_text(t))
 
-password_entropy = len(argv[2])*math.log2(count_length_of_alphabet(argv[2]))
+password_entropy = max_entropy_in_text(len(key), count_length_of_alphabet(key))
+
 print("Entropy of password: {}".format(password_entropy))
 
 if(password_entropy >= 100):
-    f = open(argv[3], "wb")
+    if len(argv) > 3:
+        f = open(argv[3], "wb")
+    else:
+        f = open("a", "xb")
     f.write(encrypted)
     f.close
     print("File encrypted")
